@@ -1,0 +1,675 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AURA GRID | Minimalist Technical Wear</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons via CDN -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar for cart drawer */
+        .scrollbar-thin::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-track {
+            background: #0A0A0A;
+        }
+
+        .scrollbar-thin::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body class="bg-[#F5F5F7] text-[#0A0A0A] antialiased selection:bg-[#FF3B30] selection:text-white overflow-x-hidden">
+
+    <!-- Search Overlay -->
+    <div id="searchOverlay" class="fixed inset-0 bg-[#0A0A0A]/80 backdrop-blur-md z-50 hidden items-start justify-center pt-24 transition-opacity duration-300">
+        <div class="bg-[#0A0A0A] border border-[#1C1C1E] w-full max-w-2xl mx-4 p-8 text-white relative">
+            <button id="closeSearch" class="absolute top-6 right-6 text-gray-400 hover:text-white transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+            <h3 class="font-mono text-xs uppercase text-gray-400 tracking-widest mb-4">ARCHIVE SEARCH SYSTEM</h3>
+            <input type="text"
+                   placeholder="ENTER COMPONENT NAME OR SPECIFICATION..."
+                   class="w-full bg-transparent border-b border-gray-700 py-3 text-xl focus:outline-none focus:border-[#FF3B30] font-mono transition-all text-white">
+            <div class="mt-6 flex flex-wrap gap-2">
+                <span class="text-xs bg-[#1C1C1E] px-3 py-1 font-mono text-gray-300 cursor-pointer hover:bg-neutral-800">[Outerwear]</span>
+                <span class="text-xs bg-[#1C1C1E] px-3 py-1 font-mono text-gray-300 cursor-pointer hover:bg-neutral-800">[Nylon]</span>
+                <span class="text-xs bg-[#1C1C1E] px-3 py-1 font-mono text-gray-300 cursor-pointer hover:bg-neutral-800">[Merino]</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cart Drawer -->
+    <div id="cartDrawer" class="fixed inset-y-0 right-0 w-full md:max-w-md bg-[#0A0A0A] text-white z-50 shadow-2xl transform translate-x-full transition-transform duration-500 ease-out flex flex-col">
+        <div class="p-6 border-b border-neutral-800 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i data-lucide="shopping-bag" class="w-5 h-5 text-[#FF3B30]"></i>
+                <span class="font-mono text-sm tracking-wider uppercase">GRID CART (<span id="cartCount">0</span>)</span>
+            </div>
+            <button id="closeCart" class="hover:rotate-90 duration-200 transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <div id="cartItemsContainer" class="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin">
+            <!-- Cart items will be dynamically injected here -->
+            <div id="emptyCartMessage" class="h-full flex flex-col items-center justify-center space-y-4">
+                <p class="font-mono text-xs text-neutral-400 uppercase tracking-widest">Cart holds 0 components</p>
+                <button id="emptyCartBtn"
+                        class="text-xs bg-white text-black py-3 px-6 hover:bg-[#FF3B30] hover:text-white transition duration-300 font-mono tracking-widest">
+                    RETURN TO TRANSMISSION
+                </button>
+            </div>
+        </div>
+
+        <div id="cartSummary" class="hidden p-6 border-t border-neutral-800 bg-[#0F0F11]">
+            <div class="flex justify-between font-mono text-xs uppercase tracking-widest text-neutral-400 mb-2">
+                <span>ESTIMATED SHIPPING</span>
+                <span class="text-white">FREE</span>
+            </div>
+            <div class="flex justify-between font-mono text-sm uppercase tracking-widest mb-6">
+                <span>ESTIMATED SYSTEM TOTAL</span>
+                <span id="cartTotal" class="text-[#FF3B30]">$0 USD</span>
+            </div>
+            <button id="checkoutBtn"
+                    class="w-full bg-[#FF3B30] text-white py-4 font-mono text-xs uppercase tracking-widest hover:bg-white hover:text-black transition-all duration-300 flex items-center justify-center gap-2">
+                PROCEED TO TRANSMIT PAYMENT <i data-lucide="arrow-right" class="w-4 h-4"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Popup -->
+    <div id="addedPopup" class="fixed bottom-6 right-6 bg-[#0A0A0A] border border-[#FF3B30] text-white px-6 py-4 z-40 font-mono text-xs flex items-center gap-3 animate-fade-in shadow-xl hidden">
+        <span class="inline-block w-2.5 h-2.5 bg-[#FF3B30] rounded-full animate-pulse"></span>
+        COMPONENT REGISTERED TO GRID BAG
+    </div>
+
+    <!-- Sticky Header -->
+    <header class="sticky top-0 bg-[#F5F5F7]/85 backdrop-blur-md border-b border-neutral-200 z-40 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-12">
+                <a href="#" class="font-mono font-bold tracking-[0.3em] text-lg text-black hover:text-[#FF3B30] duration-300">
+                    AURA GRID
+                </a>
+                <nav class="hidden md:flex items-center space-x-8 font-mono text-xs tracking-widest uppercase text-neutral-500">
+                    <a href="#collection" class="hover:text-black transition">COLLECTION</a>
+                    <a href="#product-view" class="hover:text-black transition">CONFIGURATOR</a>
+                    <a href="#" class="hover:text-black transition">JOURNAL</a>
+                    <a href="#" class="hover:text-black transition text-[#FF3B30] font-semibold">[DROP 02]</a>
+                </nav>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <button id="searchBtn" class="hover:text-[#FF3B30] transition flex items-center gap-1">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </button>
+                <button id="cartBtn" class="hover:text-[#FF3B30] transition relative flex items-center">
+                    <i data-lucide="shopping-bag" class="w-5 h-5"></i>
+                    <span id="cartBadge" class="hidden absolute -top-1.5 -right-2 bg-[#FF3B30] text-white font-mono text-[9px] w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="min-h-[calc(100vh-4rem)] border-b border-neutral-200 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+        <div class="lg:col-span-7 p-8 md:p-16 flex flex-col justify-between bg-white">
+            <div class="font-mono text-xs tracking-widest text-[#FF3B30] uppercase mb-12 flex items-center gap-2">
+                <span class="inline-block w-2 h-2 bg-[#FF3B30]"></span> SYSTEM OUTLINE: SECTOR DROP 01
+            </div>
+
+            <div class="my-auto space-y-8">
+                <h1 class="text-5xl md:text-7xl lg:text-8xl font-black tracking-tighter leading-none text-black">
+                    FUNCTION <br />OVER FORM.<br />
+                    <span class="text-neutral-400">FORM OVER</span><br />
+                    NOTHING.
+                </h1>
+                <p class="text-sm md:text-base text-neutral-600 font-mono tracking-tight max-w-lg leading-relaxed">
+                    We engineer garments that endure the shifting patterns of urban evolution. Crafted from organic textiles, modular zero-waste layouts, and extreme weather membranes.
+                </p>
+                <div class="pt-4 flex flex-col sm:flex-row gap-4">
+                    <a href="#collection"
+                       class="inline-flex items-center justify-center bg-black hover:bg-[#FF3B30] text-white px-8 py-4 text-xs font-mono uppercase tracking-widest transition duration-500">
+                        EXPLORE CURRENT MODULES <i data-lucide="arrow-right" class="ml-2 w-4 h-4"></i>
+                    </a>
+                    <a href="#product-view"
+                       class="inline-flex items-center justify-center border border-neutral-300 hover:border-black text-black px-8 py-4 text-xs font-mono uppercase tracking-widest transition duration-500">
+                        QUICK SPEC CONFIG
+                    </a>
+                </div>
+            </div>
+
+            <div class="mt-16 border-t border-neutral-100 pt-8 grid grid-cols-3 gap-4 font-mono text-[10px] tracking-wider text-neutral-400">
+                <div>
+                    <span class="text-black font-semibold block mb-1">01 / INTEGRITY</span>
+                    GOTS-CERTIFIED RAW BASE
+                </div>
+                <div>
+                    <span class="text-black font-semibold block mb-1">02 / MODIFIED</span>
+                    MODULAR ZIP ADJUSTERS
+                </div>
+                <div>
+                    <span class="text-black font-semibold block mb-1">03 / CYCLICAL</span>
+                    LIFETIME REPAIR BACKING
+                </div>
+            </div>
+        </div>
+
+        <div class="lg:col-span-5 relative bg-neutral-900 group overflow-hidden flex items-center justify-center min-h-[400px] lg:min-h-0">
+            <div class="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent z-10" />
+            <img src="https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=1200&q=80"
+                 alt="Hero Streetwear Model"
+                 class="absolute inset-0 w-full h-full object-cover filter contrast-125 grayscale brightness-75 transition-transform duration-1000 group-hover:scale-105" />
+            <div class="relative z-20 text-white p-8 text-left mt-auto w-full">
+                <span class="font-mono text-xs uppercase tracking-widest text-[#FF3B30] bg-[#FF3B30]/10 px-2.5 py-1 border border-[#FF3B30]/30 inline-block mb-4">PRE-DROP INTEL</span>
+                <h2 class="text-2xl md:text-3xl font-bold tracking-tight mb-2">ASYMMETRIC WINDBREAKER GEN.2</h2>
+                <p class="font-mono text-xs text-neutral-400 max-w-sm">Optimized dynamic posture stitching, waterproof taped seam mechanics.</p>
+                <button class="mt-4 font-mono text-xs underline decoration-[#FF3B30] underline-offset-4 text-white hover:text-[#FF3B30] transition-colors"
+                        onclick="scrollToSection('product-view')">
+                    INSPECT MODULE SPECS
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Products Grid -->
+    <section id="collection" class="max-w-7xl mx-auto px-6 py-20 md:py-32">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 border-b border-neutral-200 pb-8">
+            <div>
+                <span class="font-mono text-xs text-neutral-400 block mb-2">// CATALOG SYSTEM INDEX</span>
+                <h2 class="text-3xl md:text-5xl font-black uppercase tracking-tight text-black">MODULAR REPERTOIRE</h2>
+            </div>
+            <div class="mt-4 md:mt-0 flex gap-4 font-mono text-xs">
+                <span class="text-[#FF3B30] font-bold underline underline-offset-4">[ ALL GENERATIONS ]</span>
+                <span class="text-neutral-400 hover:text-black transition cursor-pointer">[ SHELLS ]</span>
+                <span class="text-neutral-400 hover:text-black transition cursor-pointer">[ COMPLEMENTS ]</span>
+            </div>
+        </div>
+
+        <div id="productGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-12">
+            <!-- Dynamically injected via JS -->
+        </div>
+    </section>
+
+    <!-- Interactive Configurator / Product Detail Section -->
+    <section id="product-view" class="bg-white border-t border-neutral-200 py-20 md:py-32">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20">
+
+                <!-- Gallery Block -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="border border-neutral-200 bg-[#F5F5F7] overflow-hidden">
+                        <img id="pdpMainImage"
+                             src=""
+                             alt="Product Main"
+                             class="w-full h-[600px] object-cover transition-all duration-700" />
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-neutral-200 overflow-hidden h-[300px]">
+                            <img id="pdpAltImage" src="" alt="Structural detailing angle" class="w-full h-full object-cover" />
+                        </div>
+                        <div class="bg-[#0A0A0A] p-8 text-white flex flex-col justify-between h-[300px]">
+                            <div class="font-mono space-y-1">
+                                <span class="text-[#FF3B30] text-[10px] uppercase tracking-widest block font-bold">// TECH SPEC OVERVIEW</span>
+                                <p id="pdpSpecs" class="text-xs text-neutral-400 leading-relaxed"></p>
+                            </div>
+                            <div class="border-t border-neutral-800 pt-4 flex gap-4 text-xs font-mono">
+                                <div>
+                                    <span class="block text-[9px] text-neutral-500">CARBON FOOTPRINT</span>
+                                    <span class="text-[#FF3B30] font-bold">REDUCED 38%</span>
+                                </div>
+                                <div>
+                                    <span class="block text-[9px] text-neutral-500">ORIGIN</span>
+                                    <span>PORTUGAL ASSEMBLY</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Config & Buy Block -->
+                <div class="lg:col-span-5 flex flex-col justify-between">
+                    <div>
+                        <nav class="font-mono text-[10px] tracking-widest text-neutral-400 uppercase mb-6 flex gap-2">
+                            <span>CATALOG</span> / <span id="pdpCategory">CATEGORY</span> / <span id="pdpName" class="text-black font-bold">PRODUCT</span>
+                        </nav>
+
+                        <h1 id="pdpTitle" class="text-3xl md:text-5xl font-black uppercase tracking-tight text-neutral-900 mb-2">PRODUCT TITLE</h1>
+                        <p id="pdpPrice" class="font-mono text-xl text-[#FF3B30] font-bold mb-6">$0 USD</p>
+
+                        <p id="pdpDescription" class="text-sm text-neutral-600 leading-relaxed mb-8">Product description placeholder.</p>
+
+                        <div class="border-y border-neutral-200 py-6 space-y-4 mb-8">
+                            <div class="flex justify-between items-center text-xs font-mono">
+                                <span class="text-neutral-500 uppercase tracking-widest">SIZE SPECIFICATION</span>
+                                <span class="text-black font-semibold uppercase tracking-widest underline cursor-pointer hover:text-[#FF3B30]">SIZE CHART GUIDE</span>
+                            </div>
+
+                            <!-- Interactive Size Selector -->
+                            <div id="sizeSelector" class="flex gap-2">
+                                <!-- Sizes injected dynamically -->
+                            </div>
+                        </div>
+
+                        <!-- Primary Add to Cart Call-to-Action -->
+                        <button id="addToCartBtn"
+                                class="w-full bg-[#0A0A0A] hover:bg-[#FF3B30] text-white py-5 font-mono text-xs uppercase tracking-widest transition duration-500 flex items-center justify-center gap-3">
+                            ADD SPEC COMPONENT TO BAG <i data-lucide="plus" class="w-4 h-4"></i>
+                        </button>
+
+                        <!-- Micro-accordions -->
+                        <div class="mt-8 space-y-4">
+                            <div class="border-b border-neutral-200 pb-4">
+                                <button class="w-full flex justify-between items-center text-xs font-mono uppercase tracking-widest text-black hover:text-[#FF3B30]"
+                                        onclick="toggleAccordion('specsAccordion')">
+                                    <span>MATERIAL & REPAIR COMPLIANCE</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="specsChevron"></i>
+                                </button>
+                                <div id="specsAccordion" class="hidden mt-3 text-xs text-neutral-500 font-mono leading-relaxed bg-[#F5F5F7] p-4 border border-neutral-100">
+                                    <!-- Injected dynamically -->
+                                </div>
+                            </div>
+
+                            <div class="border-b border-neutral-200 pb-4">
+                                <button class="w-full flex justify-between items-center text-xs font-mono uppercase tracking-widest text-black hover:text-[#FF3B30]"
+                                        onclick="toggleAccordion('careAccordion')">
+                                    <span>CARE SYSTEM ROUTINE</span>
+                                    <i data-lucide="chevron-down" class="w-4 h-4 transition-transform" id="careChevron"></i>
+                                </button>
+                                <div id="careAccordion" class="hidden mt-3 text-xs text-neutral-500 font-mono leading-relaxed bg-[#F5F5F7] p-4 border border-neutral-100">
+                                    <!-- Injected dynamically -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Badges footer -->
+                    <div class="mt-12 pt-8 border-t border-neutral-200 grid grid-cols-3 gap-4 text-center">
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="leaf" class="w-5 h-5 text-[#FF3B30] mb-2"></i>
+                            <span class="font-mono text-[9px] uppercase tracking-wider block font-bold text-neutral-700">ORGANIC LABELED</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="refresh-cw" class="w-5 h-5 text-[#FF3B30] mb-2"></i>
+                            <span class="font-mono text-[9px] uppercase tracking-wider block font-bold text-neutral-700">100% RECYCLABLE</span>
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <i data-lucide="shield-check" class="w-5 h-5 text-[#FF3B30] mb-2"></i>
+                            <span class="font-mono text-[9px] uppercase tracking-wider block font-bold text-neutral-700">WINDPROOF SYSTEM</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer Brand Manifest -->
+    <section class="bg-[#0A0A0A] text-white py-24 border-t border-neutral-900">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div class="lg:col-span-8">
+                <span class="text-[#FF3B30] font-mono text-xs uppercase tracking-widest block mb-4">// BRAND INTEGRITY MANIFEST</span>
+                <p class="text-3xl md:text-5xl lg:text-6xl font-black uppercase tracking-tight leading-tight">
+                    COMMITTED TO ZERO WASTE STRETCHING AND FULL CYCLICAL CIRCULARITY.
+                </p>
+            </div>
+            <div class="lg:col-span-4 space-y-6">
+                <p class="text-neutral-400 text-sm font-mono leading-relaxed">
+                    We reject high-frequency collections. We produce limited hardware drops optimized strictly with technical patterns ensuring 99.4% textile utilization with raw organic yarns.
+                </p>
+                <div class="border-t border-neutral-800 pt-6">
+                    <a href="#" class="font-mono text-xs text-white hover:text-[#FF3B30] tracking-widest uppercase inline-flex items-center gap-2 transition duration-300">
+                        READ OUR CRADLE-TO-CRADLE BLUEPRINT <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-neutral-200 py-16">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12 font-mono text-xs text-neutral-500">
+            <div class="space-y-4">
+                <span class="font-bold tracking-[0.3em] text-black text-sm uppercase">AURA GRID</span>
+                <p class="text-[11px] leading-relaxed">
+                    Systemized gear for technical exploration. Built for durable resilience and dynamic modular adjustment.
+                </p>
+                <p class="text-[10px] text-neutral-400">©2026 AURA GRID APPARATUS INC. ALL SCHEMES SECURED.</p>
+            </div>
+            <div>
+                <span class="text-black font-semibold block mb-4">SYSTEM INDEX</span>
+                <ul class="space-y-2">
+                    <li><a href="#" class="hover:text-black transition">DROP 01 CONFIGURATION</a></li>
+                    <li><a href="#" class="hover:text-black transition">CORE PRODUCTS</a></li>
+                    <li><a href="#" class="hover:text-black transition">LABORATORY EXPERIMENT</a></li>
+                    <li><a href="#" class="hover:text-black transition">CYCLIC RETURNS</a></li>
+                </ul>
+            </div>
+            <div>
+                <span class="text-black font-semibold block mb-4">COMPLIANCE HUB</span>
+                <ul class="space-y-2">
+                    <li><a href="#" class="hover:text-black transition">MATERIAL TRACEABILITY</a></li>
+                    <li><a href="#" class="hover:text-black transition">SHIPPING EMISSIONS</a></li>
+                    <li><a href="#" class="hover:text-black transition">LOCAL REPAIR HUBS</a></li>
+                </ul>
+            </div>
+            <div>
+                <span class="text-[#FF3B30] font-semibold block mb-4">[ TRANSMISSION NETWORK ]</span>
+                <p class="text-[11px] mb-4">Subscribe to unlock drop schedules and telemetry logs.</p>
+                <div class="flex">
+                    <input type="email"
+                           placeholder="ADDRESS..."
+                           class="bg-[#F5F5F7] border border-neutral-300 px-3 py-2 text-black text-[11px] focus:outline-none focus:border-[#FF3B30] flex-1">
+                    <button class="bg-black hover:bg-[#FF3B30] text-white px-4 transition duration-300 font-bold">→</button>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Logic -->
+    <script>
+        const products = [
+            {
+                id: 'p1',
+                name: 'MODULAR CARGO PANT',
+                price: 185,
+                category: 'Pants',
+                material: '100% Recycled Technical Nylon',
+                image: 'https://images.unsplash.com/photo-1517462964-21fdcec3f25b?auto=format&fit=crop&w=800&q=80',
+                altImage: 'https://images.unsplash.com/photo-1509551388413-e18d0ac5d495?auto=format&fit=crop&w=800&q=80',
+                description: 'Weather-resistant modular construction, detach-and-adapt storage, and double-reinforced knee framing tailored for ergonomic urban transit.',
+                sizes: ['S', 'M', 'L', 'XL'],
+                stock: { S: 2, M: 5, L: 0, XL: 3 },
+                specs: '6 pocket configuration, YKK AquaGuard water-resistant zips, adjustable drawstring cuffs.',
+                care: 'Machine wash cold on delicate, air dry to preserve performance coating.'
+            },
+            {
+                id: 'p2',
+                name: 'ASYMMETRIC WINDBREAKER',
+                price: 240,
+                category: 'Outerwear',
+                material: 'Waterproof Membrane Nylon & Ocean Plastics',
+                image: 'https://images.unsplash.com/photo-1548883354-7622d03aca27?auto=format&fit=crop&w=800&q=80',
+                altImage: 'https://images.unsplash.com/photo-1544441893-675973e31985?auto=format&fit=crop&w=800&q=80',
+                description: 'Optimal defense shield against shifting micro-climates. Accented with our signature off-center dynamic zipper glide and underarm ventilation panels.',
+                sizes: ['S', 'M', 'L'],
+                stock: { S: 1, M: 0, L: 4 },
+                specs: '15,000mm hydrostatic head rating, concealed packable storm hood, taped seams.',
+                care: 'Wipe clean with a damp cloth or professional cycle.'
+            },
+            {
+                id: 'p3',
+                name: 'MERINO RIBBED BEANIE',
+                price: 65,
+                category: 'Accessories',
+                material: '100% Extra-Fine Merino Wool',
+                image: 'https://images.unsplash.com/photo-1576871337622-98d48d435350?auto=format&fit=crop&w=800&q=80',
+                altImage: 'https://images.unsplash.com/photo-1608889174619-41fe495bb68c?auto=format&fit=crop&w=800&q=80',
+                description: 'Super-soft thermo-regulating luxury rib knit with high-retention elasticity and a structured, clean double-layered cuff profile.',
+                sizes: ['O/S'],
+                stock: { 'O/S': 8 },
+                specs: 'Engineered crown styling, woven brand signature tag sewn into interior hem.',
+                care: 'Dry flat, hand wash warm only with specialized wool detergent.'
+            },
+            {
+                id: 'p4',
+                name: 'THERMAL BASE-LAYER',
+                price: 110,
+                category: 'Tops',
+                material: '85% GOTS Organic Cotton, 15% Recycled Elastane',
+                image: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?auto=format&fit=crop&w=800&q=80',
+                altImage: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80',
+                description: 'Sculpted form-fitting thermal base designed to match the body\'s natural heat patterns. Breathable mesh mapping zones woven along stress areas.',
+                sizes: ['S', 'M', 'L', 'XL'],
+                stock: { S: 4, M: 6, L: 2, XL: 0 },
+                specs: 'Advanced anti-microbial finish, ultra-flat friction-less coverstitch seams.',
+                care: 'Wash cold inside out. Do not use softeners.'
+            }
+        ];
+
+        let cart = [];
+        let selectedProduct = products[0];
+        let selectedSize = '';
+
+        // Initialize Lucide Icons
+        function initLucide() {
+            if (window.lucide) {
+                window.lucide.createIcons();
+            }
+        }
+
+        // Render product grid on homepage
+        function renderGrid() {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = products.map(prod => `
+                <div class="group relative flex flex-col bg-white border border-neutral-100 hover:border-neutral-300 transition duration-300 p-4">
+                    <div
+                        class="w-full h-96 overflow-hidden relative bg-[#F5F5F7] cursor-pointer"
+                        onclick="selectProduct('${prod.id}')"
+                    >
+                        <img
+                            src="${prod.image}"
+                            alt="${prod.name}"
+                            class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        />
+                        <img
+                            src="${prod.altImage}"
+                            alt="${prod.name}"
+                            class="w-full h-full object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                        />
+                        <span class="absolute top-3 left-3 bg-black text-white font-mono text-[9px] uppercase tracking-widest px-2.5 py-1 z-10">
+                            ${prod.category}
+                        </span>
+                    </div>
+
+                    <div class="mt-6 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h3 class="font-mono text-xs font-semibold tracking-wider text-neutral-800 uppercase">${prod.name}</h3>
+                                <span class="font-mono text-xs font-bold text-[#FF3B30]">$${prod.price}</span>
+                            </div>
+                            <p class="text-[11px] text-neutral-400 font-mono tracking-tight line-clamp-2">${prod.description}</p>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t border-neutral-100 flex items-center justify-between">
+                            <span class="font-mono text-[9px] text-[#FF3B30] uppercase tracking-widest">${prod.material}</span>
+                            <button
+                                onclick="event.stopPropagation(); selectProduct('${prod.id}')"
+                                class="text-xs bg-black text-white px-3 py-2 font-mono hover:bg-[#FF3B30] transition duration-300 uppercase tracking-widest text-[10px]"
+                            >
+                                CONFIG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Select a product to view in the Configurator
+        function selectProduct(id) {
+            selectedProduct = products.find(p => p.id === id);
+            selectedSize = selectedProduct.sizes[0];
+            updatePDP();
+            document.getElementById('product-view').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Update Product Detail Page (PDP) UI
+        function updatePDP() {
+            document.getElementById('pdpMainImage').src = selectedProduct.image;
+            document.getElementById('pdpAltImage').src = selectedProduct.altImage;
+            document.getElementById('pdpTitle').innerText = selectedProduct.name;
+            document.getElementById('pdpPrice').innerText = `$${selectedProduct.price} USD`;
+            document.getElementById('pdpCategory').innerText = selectedProduct.category;
+            document.getElementById('pdpDescription').innerText = selectedProduct.description;
+            document.getElementById('pdpSpecs').innerText = selectedProduct.specs;
+
+            // Render sizes
+            const sizeContainer = document.getElementById('sizeSelector');
+            sizeContainer.innerHTML = selectedProduct.sizes.map(size => {
+                const isOutOfStock = selectedProduct.stock[size] === 0;
+                return `
+                    <button
+                        class="flex-1 border py-3 text-xs font-mono transition duration-200 flex flex-col items-center justify-center relative ${
+                            isOutOfStock
+                                ? 'bg-neutral-100 border-neutral-200 text-neutral-300 cursor-not-allowed line-through'
+                                : selectedSize === size
+                                    ? 'bg-black text-white border-black'
+                                : 'bg-white border-neutral-300 text-black hover:border-black'
+                        }"
+                        ${isOutOfStock ? 'disabled' : `onclick="selectSize('${size}')"`}
+                    >
+                        <span>${size}</span>
+                        ${selectedProduct.stock[size] > 0 && selectedProduct.stock[size] <= 2 ? `<span class="absolute top-1 text-[8px] text-[#FF3B30] font-bold">LAST ${selectedProduct.stock[size]}</span>` : ''}
+                    </button>
+                `;
+            }).join('');
+
+            // Accordions content
+            document.getElementById('specsAccordion').innerHTML = `${selectedProduct.material}. Under our Cyclical System policy, this product enjoys a lifetime repair and upgrade warranty at any certified regional hub.`;
+            document.getElementById('careAccordion').innerHTML = selectedProduct.care;
+        }
+
+        function selectSize(size) {
+            selectedSize = size;
+            updatePDP();
+        }
+
+        function toggleAccordion(id) {
+            const el = document.getElementById(id);
+            const chevron = document.getElementById(id === 'specsAccordion' ? 'specsChevron' : 'careChevron');
+            el.classList.toggle('hidden');
+            if (el.classList.contains('hidden')) {
+                chevron.classList.remove('rotate-180');
+            } else {
+                chevron.classList.add('rotate-180');
+            }
+        }
+
+        // Cart Operations
+        function addToCart() {
+            if (!selectedSize) {
+                alert('Please select a size first.');
+                return;
+            }
+            const existingIndex = cart.findIndex(item => item.product.id === selectedProduct.id && item.size === selectedSize);
+            if (existingIndex > -1) {
+                cart[existingIndex].quantity += 1;
+            } else {
+                cart.push({ product: selectedProduct, size: selectedSize, quantity: 1 });
+            }
+            updateCartUI();
+            showPopup();
+        }
+
+        function updateCartUI() {
+            const count = cart.reduce((acc, item) => acc + item.quantity, 0);
+            document.getElementById('cartCount').innerText = count;
+            const badge = document.getElementById('cartBadge');
+            if (count > 0) {
+                badge.classList.remove('hidden');
+                badge.innerText = count;
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            const container = document.getElementById('cartItemsContainer');
+            const emptyMsg = document.getElementById('emptyCartMessage');
+            const summary = document.getElementById('cartSummary');
+
+            if (cart.length === 0) {
+                container.innerHTML = ''; // Clear items
+                container.appendChild(emptyMsg);
+                summary.classList.add('hidden');
+            } else {
+                container.innerHTML = cart.map((item, idx) => `
+                    <div class="flex gap-4 border-b border-neutral-900 pb-6 last:border-0">
+                        <img src="${item.product.image}" alt="${item.product.name}" class="w-20 h-24 object-cover filter brightness-90 border border-neutral-800" />
+                        <div class="flex-1 flex flex-col justify-between">
+                            <div>
+                                <h4 class="font-mono text-xs uppercase tracking-wider font-semibold">${item.product.name}</h4>
+                                <p class="text-xs text-neutral-400 mt-1">SIZE: ${item.size}</p>
+                                <p class="font-mono text-xs text-[#FF3B30] mt-1">$${item.product.price} USD</p>
+                            </div>
+                            <div class="flex items-center justify-between mt-2">
+                                <div class="flex items-center border border-neutral-800">
+                                    <button onclick="updateQuantity(${idx}, -1)" class="p-1 px-2.5 hover:bg-neutral-900 transition text-gray-400"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                                    <span class="px-3 font-mono text-xs">${item.quantity}</span>
+                                    <button onclick="updateQuantity(${idx}, 1)" class="p-1 px-2.5 hover:bg-neutral-900 transition text-gray-400"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                summary.classList.remove('hidden');
+                const total = cart.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+                document.getElementById('cartTotal').innerText = `$${total} USD`;
+            }
+            initLucide(); // Re-render icons inside cart
+        }
+
+        function updateQuantity(idx, delta) {
+            cart[idx].quantity += delta;
+            if (cart[idx].quantity <= 0) {
+                cart.splice(idx, 1);
+            }
+            updateCartUI();
+        }
+
+        function showPopup() {
+            const popup = document.getElementById('addedPopup');
+            popup.classList.remove('hidden');
+            setTimeout(() => popup.classList.add('hidden'), 2000);
+        }
+
+        // Open / Close drawers and overlays
+        function openCart() {
+            document.getElementById('cartDrawer').classList.remove('translate-x-full');
+        }
+        function closeCart() {
+            document.getElementById('cartDrawer').classList.add('translate-x-full');
+        }
+        function openSearch() {
+            const overlay = document.getElementById('searchOverlay');
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+        }
+        function closeSearch() {
+            const overlay = document.getElementById('searchOverlay');
+            overlay.classList.add('hidden');
+            overlay.classList.remove('flex');
+        }
+
+        function scrollToSection(id) {
+            document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Event Listeners
+        document.getElementById('cartBtn').addEventListener('click', openCart);
+        document.getElementById('closeCart').addEventListener('click', closeCart);
+        document.getElementById('searchBtn').addEventListener('click', openSearch);
+        document.getElementById('closeSearch').addEventListener('click', closeSearch);
+        document.getElementById('addToCartBtn').addEventListener('click', addToCart);
+        document.getElementById('emptyCartBtn').addEventListener('click', () => closeCart());
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', () => {
+            renderGrid();
+            updatePDP();
+            initLucide();
+        });
+    </script>
+</body>
+</html>
